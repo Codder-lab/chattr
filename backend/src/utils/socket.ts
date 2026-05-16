@@ -63,11 +63,18 @@ export const initializeSocket = (httpServer: HttpServer) => {
     // join the user's dedicated room for one-to-one chats
     socket.join(`user:${userId}`);
 
-    socket.on("join-chat", (chatId: string) => {
+    socket.on("join-chat", async (chatId: string) => {
+      const allowed = await Chat.exists({ _id: chatId, participants: userId });
+      if (!allowed) {
+        socket.emit("socket-error", { message: "Unauthorized chat access" });
+        return;
+      }
       socket.join(`chat:${chatId}`);
     });
 
-    socket.on("leave-chat", (chatId: string) => {
+    socket.on("leave-chat", async (chatId: string) => {
+      const allowed = await Chat.exists({ _id: chatId, participants: userId });
+      if (!allowed) return;
       socket.leave(`chat:${chatId}`);
     });
 
